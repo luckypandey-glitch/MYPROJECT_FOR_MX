@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Domain & MX Intelligence Tool</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@14.3.0/dist/handsontable.full.min.css"/>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI,Arial;
+background:linear-gradient(135deg,#0f172a,#1e293b);
+color:white;
+}
+
+.container{
+max-width:1400px;
+margin:auto;
+padding:40px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:25px;
+}
+
+h1{
+margin:0;
+font-weight:600;
+}
+
+.controls{
+display:flex;
+gap:12px;
+flex-wrap:wrap;
+align-items:center;
+}
+
+select,input,button{
+padding:10px 14px;
+border-radius:8px;
+border:none;
+font-size:14px;
+}
+
+input[type=file]{
+background:white;
+color:black;
+}
+
+input[type=text]{
+background:white;
+color:black;
+width:220px;
+}
+
+select{
+background:#1e40af;
+color:white;
+}
+
+button{
+background:#3b82f6;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+background:#2563eb;
+}
+
+#spreadsheet{
+margin-top:25px;
+background:white;
+border-radius:12px;
+overflow:hidden;
+}
+
+.status{
+margin-top:15px;
+font-size:14px;
+color:#93c5fd;
+}
+
+.loader{
+border:4px solid rgba(255,255,255,0.2);
+border-top:4px solid white;
+border-radius:50%;
+width:18px;
+height:18px;
+animation:spin 1s linear infinite;
+display:inline-block;
+margin-left:10px;
+}
+
+@keyframes spin{
+0%{transform:rotate(0deg)}
+100%{transform:rotate(360deg)}
+}
+
+.file-name{
+font-size:13px;
+opacity:0.8;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+
+<h1>Domain & MX Intelligence Tool</h1>
+
+<div class="controls">
+
+<input 
+type="text" 
+id="apiKey" 
+placeholder="Enter SerpAPI Key">
+
+<select id="mode">
+<option value="both">Domain + MX</option>
+<option value="domain_only">Only Domain</option>
+<option value="mx_only">Only MX</option>
+</select>
+
+<input type="file" id="fileInput" accept=".csv">
+
+<button onclick="processFile()">Process File</button>
+
+<button onclick="downloadCSV()">Download CSV</button>
+
+</div>
+
+</div>
+
+<div class="file-name" id="filename"></div>
+
+<div class="status" id="status"></div>
+
+<div id="spreadsheet"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/handsontable@14.3.0/dist/handsontable.full.min.js"></script>
+
+<script>
+
+let hot
+let tableData=[]
+
+document.getElementById("fileInput").addEventListener("change",function(){
+document.getElementById("filename").innerText="File: "+this.files[0].name
+})
+
+async function processFile(){
+
+const file=document.getElementById("fileInput").files[0]
+const apiKey=document.getElementById("apiKey").value
+
+if(!file){
+alert("Upload CSV first")
+return
+}
+
+const status=document.getElementById("status")
+status.innerHTML="Processing file <span class='loader'></span>"
+
+const formData=new FormData()
+
+formData.append("file",file)
+formData.append("mode",document.getElementById("mode").value)
+formData.append("api_key",apiKey)
+
+try{
+
+const res=await fetch("http://127.0.0.1:8000/process/",{
+method:"POST",
+body:formData
+})
+
+const data=await res.json()
+
+tableData=data.data
+
+loadExcel(tableData)
+
+status.innerHTML="Completed ✓ You can edit the spreadsheet"
+
+}catch(err){
+
+status.innerHTML="Error connecting to server"
+
+}
+
+}
+
+function loadExcel(data){
+
+const container=document.getElementById("spreadsheet")
+
+if(hot){
+hot.destroy()
+}
+
+hot=new Handsontable(container,{
+
+data:data,
+
+colHeaders:[
+"Company Name",
+"Domain",
+"MX Record",
+"IP",
+"Host",
+"Org"
+],
+
+columns:[
+{data:"Company Name"},
+{data:"Domain"},
+{data:"MX Record"},
+{data:"IP"},
+{data:"Host"},
+{data:"Org"}
+],
+
+rowHeaders:true,
+stretchH:"all",
+
+manualRowMove:true,
+manualColumnMove:true,
+manualColumnResize:true,
+
+filters:true,
+dropdownMenu:true,
+
+contextMenu:true,
+
+height:500,
+
+licenseKey:"non-commercial-and-evaluation"
+
+})
+
+}
+
+function downloadCSV(){
+
+if(!hot){
+alert("No data available")
+return
+}
+
+const data=hot.getSourceData()
+
+let csv="Company Name,Domain,MX Record,IP,Host,Org\n"
+
+data.forEach(row=>{
+
+let line=[
+row["Company Name"]||"",
+row["Domain"]||"",
+row["MX Record"]||"",
+row["IP"]||"",
+row["Host"]||"",
+row["Org"]||""
+]
+
+csv+=line.join(",")+"\n"
+
+})
+
+const blob=new Blob([csv],{type:"text/csv"})
+const url=URL.createObjectURL(blob)
+
+const a=document.createElement("a")
+a.href=url
+a.download="domain_mx_results.csv"
+a.click()
+
+}
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
