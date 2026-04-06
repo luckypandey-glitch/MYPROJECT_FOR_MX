@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pandas
+requests
+dnspython
+ipwhois
+python-multipart
