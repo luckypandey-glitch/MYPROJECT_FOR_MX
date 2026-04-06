@@ -26,6 +26,8 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 margin-bottom:25px;
+flex-wrap:wrap;
+gap:10px;
 }
 
 h1{
@@ -120,10 +122,7 @@ opacity:0.8;
 
 <div class="controls">
 
-<input 
-type="text" 
-id="apiKey" 
-placeholder="Enter SerpAPI Key">
+<input type="text" id="apiKey" placeholder="Enter SerpAPI Key">
 
 <select id="mode">
 <option value="both">Domain + MX</option>
@@ -153,8 +152,18 @@ placeholder="Enter SerpAPI Key">
 
 <script>
 
+const API_BASE="https://myproject-for-mx.onrender.com"
+
 let hot
 let tableData=[]
+
+async function wakeServer(){
+try{
+await fetch(API_BASE)
+}catch(e){}
+}
+
+wakeServer()
 
 document.getElementById("fileInput").addEventListener("change",function(){
 document.getElementById("filename").innerText="File: "+this.files[0].name
@@ -181,10 +190,14 @@ formData.append("api_key",apiKey)
 
 try{
 
-const res=await fetch("http://127.0.0.1:8000/process/",{
+const res=await fetch(API_BASE+"/process/",{
 method:"POST",
 body:formData
 })
+
+if(!res.ok){
+throw new Error("Server error")
+}
 
 const data=await res.json()
 
@@ -192,7 +205,7 @@ tableData=data.data
 
 loadExcel(tableData)
 
-status.innerHTML="Completed ✓ You can edit the spreadsheet"
+status.innerHTML="Completed ✓ "+tableData.length+" rows processed"
 
 }catch(err){
 
@@ -292,8 +305,3 @@ a.click()
 
 </body>
 </html>
-
-
-
-
-
