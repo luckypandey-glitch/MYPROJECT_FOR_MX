@@ -1,8 +1,9 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Domain & MX Intelligence Tool</title>
+<title>Domain Intelligence Tool</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@14.3.0/dist/handsontable.full.min.css"/>
 
@@ -57,7 +58,7 @@ color:black;
 input[type=text]{
 background:white;
 color:black;
-width:220px;
+width:240px;
 }
 
 select{
@@ -110,6 +111,7 @@ opacity:0.8;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -118,16 +120,26 @@ opacity:0.8;
 
 <div class="header">
 
-<h1>Domain & MX Intelligence Tool</h1>
+<h1>Domain Intelligence Tool</h1>
 
 <div class="controls">
 
 <input type="text" id="apiKey" placeholder="Enter SerpAPI Key">
 
 <select id="mode">
-<option value="both">Domain + MX</option>
-<option value="domain_only">Only Domain</option>
-<option value="mx_only">Only MX</option>
+
+<option value="find_mx">Find MX</option>
+
+<option value="find_domain">Find Domain</option>
+
+<option value="find_company">Find Company Name From Domain</option>
+
+<option value="mx_domain">Find MX + Domain</option>
+
+<option value="company_mx">Find Company Name From Domain + MX</option>
+
+<option value="remove_duplicate">Remove Duplicate</option>
+
 </select>
 
 <input type="file" id="fileInput" accept=".csv">
@@ -157,16 +169,10 @@ const API_BASE="https://myproject-for-mx.onrender.com"
 let hot
 let tableData=[]
 
-async function wakeServer(){
-try{
-await fetch(API_BASE)
-}catch(e){}
-}
-
-wakeServer()
-
 document.getElementById("fileInput").addEventListener("change",function(){
+
 document.getElementById("filename").innerText="File: "+this.files[0].name
+
 })
 
 async function processFile(){
@@ -175,11 +181,14 @@ const file=document.getElementById("fileInput").files[0]
 const apiKey=document.getElementById("apiKey").value
 
 if(!file){
+
 alert("Upload CSV first")
 return
+
 }
 
 const status=document.getElementById("status")
+
 status.innerHTML="Processing file <span class='loader'></span>"
 
 const formData=new FormData()
@@ -194,10 +203,6 @@ const res=await fetch(API_BASE+"/process/",{
 method:"POST",
 body:formData
 })
-
-if(!res.ok){
-throw new Error("Server error")
-}
 
 const data=await res.json()
 
@@ -233,7 +238,7 @@ colHeaders:[
 "MX Record",
 "IP",
 "Host",
-"Org"
+"Organization"
 ],
 
 columns:[
@@ -242,7 +247,7 @@ columns:[
 {data:"MX Record"},
 {data:"IP"},
 {data:"Host"},
-{data:"Org"}
+{data:"Organization"}
 ],
 
 rowHeaders:true,
@@ -268,13 +273,15 @@ licenseKey:"non-commercial-and-evaluation"
 function downloadCSV(){
 
 if(!hot){
+
 alert("No data available")
 return
+
 }
 
 const data=hot.getSourceData()
 
-let csv="Company Name,Domain,MX Record,IP,Host,Org\n"
+let csv="Company Name,Domain,MX Record,IP,Host,Organization\n"
 
 data.forEach(row=>{
 
@@ -284,7 +291,7 @@ row["Domain"]||"",
 row["MX Record"]||"",
 row["IP"]||"",
 row["Host"]||"",
-row["Org"]||""
+row["Organization"]||""
 ]
 
 csv+=line.join(",")+"\n"
@@ -296,7 +303,7 @@ const url=URL.createObjectURL(blob)
 
 const a=document.createElement("a")
 a.href=url
-a.download="domain_mx_results.csv"
+a.download="domain_results.csv"
 a.click()
 
 }
